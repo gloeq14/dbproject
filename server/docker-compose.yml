@@ -3,7 +3,7 @@ services:
   api-server:
     image: gloeq14/dbproject
     ports:
-      - "3001:80"
+      - "80:80"
   mongo:
     image: mongo:3.6.19-xenial
     ports:
