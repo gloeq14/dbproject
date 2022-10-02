@@ -1,0 +1,2 @@
+cd into server
+run docker-compose up

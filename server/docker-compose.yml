@@ -1,0 +1,15 @@
+version: "3.4"
+services:
+  api-server:
+    image: gloeq14/dbproject
+    ports:
+      - "3001:80"
+  mongo:
+    image: mongo:3.6.19-xenial
+    ports:
+      - "27017:27017"
+  neo4j_yt:
+    image: neo4j:3.5
+    ports:
+      - "17475:7474"
+      - "7688:7687"
