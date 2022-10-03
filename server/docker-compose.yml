@@ -3,7 +3,7 @@ services:
   api-server:
     image: gloeq14/dbproject
     ports:
-      - "8080:80"
+      - "80:80"
   mongo:
     image: mongo:6.0.2
     ports:
