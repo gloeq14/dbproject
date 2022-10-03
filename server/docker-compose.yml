@@ -3,13 +3,13 @@ services:
   api-server:
     image: gloeq14/dbproject
     ports:
-      - "80:80"
+      - "8080:80"
   mongo:
-    image: mongo:3.6.19-xenial
+    image: mongo:6.0.2
     ports:
-      - "27017:27017"
+      - "27018:27017"
   neo4j_yt:
-    image: neo4j:3.5
+    image: neo4j:4.4.9-community
     ports:
       - "17475:7474"
       - "7688:7687"
