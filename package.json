@@ -1,0 +1,18 @@
+{
+  "type": "module",
+  "name": "bda-project",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "sudo node src/server.mjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.0",
+    "bootstrap": "^5.2.2",
+    "express": "^4.18.1",
+    "leaflet": "^1.9.2",
+    "nodemon": "^2.0.20",
+    "pug": "^3.0.2"
+  }
+}

@@ -1,12 +1,13 @@
 FROM node:alpine
 ENV NODE_ENV=production
 
-WORKDIR /server
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
 
 COPY ["package.json","package-lock.json", "./"]
 
-RUN npm install --production
+RUN npm install --$NODE_ENV
 
 COPY . .
 
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
