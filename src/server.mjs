@@ -1,26 +1,26 @@
 import express from 'express'
 import { homePage } from "./controllers/itineraryController.mjs";
-import { heartbeat } from "./controllers/featureController.mjs";
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { heartbeat, extractedData, transformedData } from "./controllers/featureController.mjs";
+import { ROOT, boot } from "./boot.mjs";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+await boot();
+
 const app = express();
-const PORT = 80;
 
 // Server configuration
-app.set('views', __dirname + '/views')
+app.set('views', ROOT + '/views')
 app.set('view engine', 'pug');
-app.use("/assets", express.static(__dirname + "/../public/assets"));
-app.use("/bootstrap", express.static(__dirname + '../../node_modules/bootstrap/dist/css'));
-app.use("/leaflet", express.static(__dirname + "../../node_modules/leaflet/dist"));
+app.use("/assets", express.static(ROOT + "/../public/assets"));
+app.use("/bootstrap", express.static(ROOT + '../../node_modules/bootstrap/dist/css'));
+app.use("/leaflet", express.static(ROOT + "../../node_modules/leaflet/dist"));
 
 // Route definitions
 app.get('/', homePage);
 app.get('/heartbeat', heartbeat);
+app.get('/extracted_data', extractedData);
+app.get('/transformed_data', transformedData);
 
 // Server handling
-app.listen(PORT, () => {
-	console.log("HTTP server listening on port " + PORT);
+app.listen(80, () => {
+	console.log("HTTP server listening on port " + 80);
 });

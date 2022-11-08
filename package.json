@@ -3,15 +3,19 @@
   "name": "bda-project",
   "version": "1.0.0",
   "scripts": {
-    "start": "sudo node src/server.mjs"
+    "serve": "node src/server.mjs",
+    "seed": "node src/database/seeding/routes.mjs && node src/database/seeding/restaurants.mjs"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.1.3",
     "body-parser": "^1.20.0",
     "bootstrap": "^5.2.2",
+    "dotenv": "^16.0.3",
     "express": "^4.18.1",
     "leaflet": "^1.9.2",
+    "mongodb": "^4.11.0",
     "nodemon": "^2.0.20",
     "pug": "^3.0.2"
   }

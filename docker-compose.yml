@@ -1,16 +1,20 @@
 version: "3.4"
 services:
+  mongo:
+    image: mongo:6.0.2
+    ports:
+      - "27017:27017"
+  neo4j_yt:
+    image: neo4j:4.4.9-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
   api-server:
     build:
       dockerfile: Dockerfile
     ports:
       - "80:80"
-  mongo:
-    image: mongo:6.0.2
-    ports:
-      - "27018:27017"
-  neo4j_yt:
-    image: neo4j:4.4.9-community
-    ports:
-      - "17475:7474"
-      - "7688:7687"
+      - "443:443"
+    depends_on:
+      - mongo
+      - neo4j_yt
