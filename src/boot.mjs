@@ -1,7 +1,7 @@
-import { client } from "./database/mongo.mjs";
 import * as dotenv from "dotenv";
-import { fileURLToPath } from "url";
 import path from "path";
+import { client } from "./database/mongo.mjs";
+import { fileURLToPath } from "url";
 
 /**
  * Lancement du projet

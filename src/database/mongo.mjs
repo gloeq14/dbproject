@@ -5,7 +5,7 @@ import { MongoClient } from 'mongodb';
  *
  * @type {MongoClient}
  */
-export const client = new MongoClient("mongodb://localhost:27017?retryWrites=true&w=majority");
+export const client = new MongoClient("mongodb://mongo:27017?retryWrites=true&w=majority");
 
 /**
  * MongoDB database

@@ -1,17 +1,19 @@
-import {boot, ROOT} from "../../boot.mjs";
-import {routes} from "../mongo.mjs";
-import {restaurants} from "../mongo.mjs";
-import {readFileSync} from "fs";
+import { boot, ROOT } from "../../boot.mjs";
+import { routes } from "../mongo.mjs";
+import { restaurants } from "../mongo.mjs";
+import { readFileSync } from "fs";
 
 await boot();
 
-const radius = 2000;
+const radius = 100;
 const geoJSONFile = ROOT + '/../data/restaurants.geojson';
 const restaurantsFromFile = loadRestaurantsFromFile(geoJSONFile);
 
 console.log("=================== Starting restaurant seeding... ===================")
 await truncateRestaurants()
+await createGeoIndex()
 await insertRestaurants(restaurantsFromFile);
+await linkRestaurants();
 console.log("=================== Restaurant seeding ended =========================")
 
 process.exit();
@@ -35,15 +37,22 @@ function loadRestaurantsFromFile(file) {
 }
 
 /**
+ * Créé un index géospatial sur les restaurants
+ */
+async function createGeoIndex() {
+    await restaurants.createIndex({ geometry: "2dsphere" });
+}
+
+/**
  * Relie les restaurants aux routes par rapport à leur distance
  *
  * @returns {Promise<void>}
  */
-async function linkRestaurants() {
-    await routes.findOne().then(async route => {
+function linkRestaurants() {
+    return routes.find().forEach(async route => {
         route.properties["restaurants"] = await findRoadRestaurants(route);
         await routes.updateOne({_id: route._id}, {$set: {properties: route.properties}});
-    });
+    }).then(() => console.log("Linked restaurants successfully"));
 }
 
 /**
@@ -58,7 +67,7 @@ async function findRoadRestaurants(road) {
     if (points.length <= 0) return restaurants;
 
     for (let i of [0, points.length-1]) {
-        const newRestaurants = await findRestaurantsNearToPoint(points[i]);
+        const newRestaurants = await findRestaurantsNearToPoint(points[i], radius);
         restaurants = concatRestaurants(restaurants, newRestaurants);
     }
 
@@ -69,15 +78,26 @@ async function findRoadRestaurants(road) {
  * Trouve et extraits les restaurants prêts d'un point
  *
  * @param point
+ * @param radius
  * @returns {Promise<*[]>}
  */
-async function findRestaurantsNearToPoint(point) {
+async function findRestaurantsNearToPoint(point, radius) {
     let lat = point[1];
     let lng = point[0];
 
-    let restaurants = [];
+    const result = restaurants.find({
+        "geometry": {
+            $near: {
+                $geometry: {
+                    type: "Point",
+                    coordinates: point
+                },
+                $maxDistance: radius
+            }
+        }
+    }).project({"_id": true});
 
-    return restaurants;
+    return await result.map(result => result["_id"]).toArray();
 }
 
 /**
@@ -89,7 +109,7 @@ async function findRestaurantsNearToPoint(point) {
  */
 function concatRestaurants(restaux1, restaux2) {
     restaux2.forEach(rest2 => {
-        if (!restaux1.find(r => r.id === rest2.id)) restaux1.push(rest2);
+        if (!restaux1.find(r => r.equals(rest2))) restaux1.push(rest2);
     });
     return restaux1;
 }
