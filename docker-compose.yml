@@ -1,30 +1,42 @@
 version: "3.4"
 services:
+
   mongo:
     image: mongo:6.0.2
     ports:
       - "27017:27017"
-    volumes:
-      - mongodb_vol:/volumes/mongo
-  neo4j_yt:
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:27017" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  neo4j:
     image: neo4j:4.4.9-community
     ports:
       - "7474:7474"
       - "7687:7687"
     volumes:
-      - neo4j_vol:/volumes/neo4j
+      - ./volumes/neo4j/conf:/conf
+      - ./volumes/neo4j/data:/data
+      - ./volumes/neo4j/import:/import
+      - ./volumes/neo4j/logs:/logs
+      - ./volumes/neo4j/plugins:/plugins
+    environment:
+      - NEO4J_AUTH=none
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:7687" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   api-server:
     build:
       dockerfile: Dockerfile
+    restart: on-failure
     ports:
       - "80:80"
       - "443:443"
     depends_on:
       - mongo
-      - neo4j_yt
-
-volumes:
-  mongodb_vol:
-    driver: local
-  neo4j_vol:
-    driver: local
+      - neo4j

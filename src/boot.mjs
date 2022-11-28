@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 import path from "path";
-import { client } from "./database/mongo.mjs";
+import { client as mongoClient } from "./database/mongo.mjs";
+import { client as neo4jClient } from "./database/neo4j.mjs";
 import { fileURLToPath } from "url";
 
 /**
@@ -15,7 +16,9 @@ export async function boot() {
     // Chargement des variables d'environnement
     dotenv.config();
     // Connection à la base de donnée
-    await client.connect();
+    await mongoClient.connect();
+    // Vérification que la connection neo est bonne
+    await neo4jClient.verifyConnectivity();
 }
 
 /**
@@ -24,7 +27,8 @@ export async function boot() {
  * @returns {Promise<void>}
  */
 async function shutdown() {
-    await client.close();
+    await mongoClient.close();
+    await neo4jClient.close();
 }
 
 /**

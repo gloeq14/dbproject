@@ -8,7 +8,7 @@ const geoJSONFile = ROOT + '/../data/reseau_cyclable.geojson';
 const routesFromFile = loadRoutesFromFile(geoJSONFile);
 
 console.log("=================== Starting route seeding... ===================")
-if (await routes.countDocuments() < 0) {
+if (await routes.countDocuments() <= 0) {
     await truncateRoutes();
     await insertRoutes(routesFromFile);
 } else {

@@ -10,7 +10,7 @@ const geoJSONFile = ROOT + '/../data/restaurants.geojson';
 const restaurantsFromFile = loadRestaurantsFromFile(geoJSONFile);
 
 console.log("=================== Starting restaurant seeding... ===================")
-if (await restaurants.countDocuments() < 0) {
+if (await restaurants.countDocuments() <= 0) {
     await truncateRestaurants()
     await createGeoIndex()
     await insertRestaurants(restaurantsFromFile);
@@ -52,11 +52,12 @@ async function createGeoIndex() {
  *
  * @returns {Promise<void>}
  */
-function linkRestaurants() {
-    return routes.find().forEach(async route => {
+async function linkRestaurants() {
+    for (const route of await routes.find().toArray()) {
         route.properties["restaurants"] = await findRoadRestaurants(route);
         await routes.updateOne({_id: route._id}, {$set: {properties: route.properties}});
-    }).then(() => console.log("Linked restaurants successfully"));
+    }
+    console.log("Linked restaurants successfully");
 }
 
 /**
