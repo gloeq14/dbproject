@@ -10,10 +10,14 @@ const geoJSONFile = ROOT + '/../data/restaurants.geojson';
 const restaurantsFromFile = loadRestaurantsFromFile(geoJSONFile);
 
 console.log("=================== Starting restaurant seeding... ===================")
-await truncateRestaurants()
-await createGeoIndex()
-await insertRestaurants(restaurantsFromFile);
-await linkRestaurants();
+if (await restaurants.countDocuments() < 0) {
+    await truncateRestaurants()
+    await createGeoIndex()
+    await insertRestaurants(restaurantsFromFile);
+    await linkRestaurants();
+} else {
+    console.log("Restaurant database already seeded")
+}
 console.log("=================== Restaurant seeding ended =========================")
 
 process.exit();

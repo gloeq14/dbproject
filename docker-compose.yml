@@ -4,11 +4,15 @@ services:
     image: mongo:6.0.2
     ports:
       - "27017:27017"
+    volumes:
+      - mongodb_vol:/volumes/mongo
   neo4j_yt:
     image: neo4j:4.4.9-community
     ports:
       - "7474:7474"
       - "7687:7687"
+    volumes:
+      - neo4j_vol:/volumes/neo4j
   api-server:
     build:
       dockerfile: Dockerfile
@@ -18,3 +22,9 @@ services:
     depends_on:
       - mongo
       - neo4j_yt
+
+volumes:
+  mongodb_vol:
+    driver: local
+  neo4j_vol:
+    driver: local
