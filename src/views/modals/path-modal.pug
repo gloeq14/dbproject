@@ -1,0 +1,21 @@
+form.mb-0
+    h2.mb-4="Détail de l'itinéraire"
+
+    div.row.align-items-center.justify-content-between
+        div.col-auto="Distance"
+        div.col-auto
+            span.form-text #{distance} mètres
+
+    div.row.align-items-center.justify-content-between.mb-3
+        div.col-auto="Nombre d'arrêts"
+        div.col-auto
+            span.form-text="3"
+
+    div.card.mb-4
+        div.card-body
+            h6.card-title="Restaurant 1"
+            p.card-text="Description du restaurant numéro 1"
+
+    div
+        button(type="submit")#back-button.mb-0.btn.btn-secondary="Retour"
+

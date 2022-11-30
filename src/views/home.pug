@@ -3,6 +3,7 @@ html
         title="Projet BDA"
         link(rel="stylesheet", href="/leaflet/leaflet.css")
         link(rel="stylesheet", href="/bootstrap/bootstrap.min.css")
+        link(rel="stylesheet", href="/assets/stylesheets/css/style.css")
         script(src="/leaflet/leaflet.js")
         script(src="/assets/js/home.js")
 
@@ -11,16 +12,8 @@ html
         div.min-vh-100.min-vw-100.row
             div.col-12#map
 
-        div(style="z-index:1000").position-fixed.top-50.start-50.translate-middle#selection-modal
-            div.rounded-2.shadow.p-5.bg-white
-                form
-                    h2="Sélection de l'itinéraire"
-                    p.mb-4="Choisissez un nombre d'arrêt souhaité ainsi q'une distance à parcourir et nous trouverons pour vous le meilleur itinéraire"
-                    div.mb-3
-                        label(for="stop-count").form-label="Nombre d'arrêt souhaité"
-                        input(type="number").form-control#stop-count
-                    div.mb-4
-                        label(for="distance").form-label="Distance à parcourir"
-                        input(type="number").form-control#distance
-                    div
-                        button(type="submit").btn.btn-primary="Valider"
+        div(style="z-index:1000").position-fixed.top-50.offset-1.translate-middle-y.col-3#modal
+            div.rounded-2.shadow-lg.p-5.bg-white
+
+        div(style="z-index:1000;").position-fixed.top-50.start-50.translate-middle
+            div#pointer

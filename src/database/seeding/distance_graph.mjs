@@ -5,12 +5,26 @@ import { client } from "../neo4j.mjs";
 await boot();
 
 console.log("=================== Starting distance graph seeding... ===================")
-const documents = await routes.find().toArray();
-await buildMissingNodes(documents);
-await buildConnections(documents);
+if (await isDatabaseEmpty()) {
+    const documents = await routes.find().toArray();
+    await buildMissingNodes(documents);
+    await buildConnections(documents);
+} else {
+    console.log("Distance graph already seeded");
+}
 console.log("=================== Distance graph seeding ended =========================")
 
 process.exit();
+
+/**
+ * Vérifie si la base de donnée est vide ou non
+ *
+ * @returns {Promise<*>}
+ */
+async function isDatabaseEmpty() {
+    let result = await client.session().run("OPTIONAL MATCH (n) RETURN n IS NULL LIMIT 1");
+    return result.records[0]._fields[0];
+}
 
 /**
  * Insère dans la base les noeuds manquants

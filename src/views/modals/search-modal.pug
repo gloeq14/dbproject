@@ -1,0 +1,15 @@
+form.mb-0
+    h2="Sélection de l'itinéraire"
+    p.mb-4="Choisissez un nombre d'arrêt souhaité ainsi q'une distance à parcourir et nous trouverons pour vous le meilleur itinéraire"
+
+    div.mb-3
+        label(for="stop-count-input").form-label="Nombre d'arrêt souhaité"
+        input(type="number").form-control#stop-count-input
+
+    div.mb-4
+        label(for="distance-input").form-label="Distance à parcourir"
+        input(type="number").form-control#distance-input
+
+    div
+        button(type="submit")#submit-button.btn.btn-primary.mb-0="Valider"
+        button#admin-menu-button.btn.btn-secondary.mb-0.ms-3="Menu administrateur"

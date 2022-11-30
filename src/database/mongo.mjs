@@ -27,3 +27,10 @@ export const routes = db.collection("routes");
  * @type {Collection<Document>}
  */
 export const restaurants = db.collection("restaurants");
+
+/**
+ * Retourne la collection "paths"
+ *
+ * @type {Collection<Document>}
+ */
+export const paths = db.collection("paths");

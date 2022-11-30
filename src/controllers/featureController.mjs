@@ -38,3 +38,31 @@ export async function transformedData(req, res) {
         longueurCyclable: totalLength[0]["total_distance"]
     });
 }
+
+// Calcule un parcours à partir d'un starting point, d'une longueur, d'un nombre de stop et d'une liste de type de resto
+export async function parcours(req, res) {
+    const path = await routes.find().project({
+        "geometry.coordinates": 1,
+        "properties.LONGUEUR": 1,
+    }).limit(5).toArray();
+    const restaurants = [];
+    const formattedPath = {
+        "type": "FeatureCollection",
+        "features": [
+            ...restaurants,
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "MultiLineString",
+                    "coordinates": [
+                        path.map(route => route.geometry.coordinates)
+                    ]
+                },
+                "properties": {
+                    "length": path.reduce((sum, route) => sum + route.properties.LONGUEUR, 0)
+                }
+            }
+        ]
+    };
+    res.json(formattedPath);
+}

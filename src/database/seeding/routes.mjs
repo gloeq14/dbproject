@@ -10,6 +10,7 @@ const routesFromFile = loadRoutesFromFile(geoJSONFile);
 console.log("=================== Starting route seeding... ===================")
 if (await routes.countDocuments() <= 0) {
     await truncateRoutes();
+    await createGeoIndex();
     await insertRoutes(routesFromFile);
 } else {
     console.log("Route database already seeded")
@@ -17,6 +18,13 @@ if (await routes.countDocuments() <= 0) {
 console.log("=================== Route seeding ended =========================")
 
 process.exit();
+
+/**
+ * Créé un index géospatial sur les routes
+ */
+async function createGeoIndex() {
+    await routes.createIndex({ geometry: "2dsphere" });
+}
 
 /**
  * Charge les routes dans un tableau depuis le fichier geoJSON

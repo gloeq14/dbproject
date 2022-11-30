@@ -3,8 +3,9 @@
   "name": "bda-project",
   "version": "1.0.0",
   "scripts": {
+    "browserify": "browserify -p esmify src/client/pages/home.js -o public/assets/js/home.js",
     "serve": "node src/server.mjs",
-    "seed": "node src/database/seeding/routes.mjs && node src/database/seeding/restaurants.mjs && node src/database/seeding/distance_graph.mjs"
+    "seed": "node src/database/seeding/*.mjs"
   },
   "author": "",
   "license": "ISC",
@@ -12,7 +13,9 @@
     "axios": "^1.1.3",
     "body-parser": "^1.20.0",
     "bootstrap": "^5.2.2",
+    "browserify": "^17.0.0",
     "dotenv": "^16.0.3",
+    "esmify": "^2.1.1",
     "express": "^4.18.1",
     "leaflet": "^1.9.2",
     "mongodb": "^4.11.0",
