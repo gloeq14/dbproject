@@ -1,5 +1,5 @@
 import express from 'express'
-import {homePage, searchModal, pathModal, adminModal, startingPoints } from "./controllers/itineraryController.mjs";
+import {homePage, searchModal, pathModal, adminModal, startingPoints, shortestPath } from "./controllers/itineraryController.mjs";
 import { heartbeat, extractedData, transformedData, parcours } from "./controllers/featureController.mjs";
 import { ROOT, boot } from "./boot.mjs";
 
@@ -24,6 +24,7 @@ app.get('/heartbeat', heartbeat);
 app.get('/extracted_data', extractedData);
 app.get('/transformed_data', transformedData);
 app.get('/parcours', parcours);
+app.get('/shortest_path', shortestPath);
 
 // Server handling
 const listener = app.listen(80, () => {
