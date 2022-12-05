@@ -1,21 +1,22 @@
 import { boot, ROOT } from "../../boot.mjs";
 import { restaurants, routes } from "../mongo.mjs";
 import { paths } from "../mongo.mjs";
+import { computeProximityGraph } from "../../core/navigation.mjs";
 
 await boot();
 
-console.log("=================== Starting paths seeding... ===================")
+console.log("=================== Starting path bounds seeding... ===================")
 if (await paths.countDocuments() <= 0) {
     await truncatePaths();
     await createGeoIndex();
     const boundingBox = (await computeRestaurantsBoundingBox().toArray())[0];
     const startingPoints = await pickStartingPoints(boundingBox, 20);
-    const computedPaths = await computePaths(startingPoints, 200, 5000, 100);
+    const computedPaths = await pickEndingPoints(startingPoints, 200, 5000, 100, 0.10);
     await insertPaths(computedPaths);
 } else {
-    console.log("Paths database already seeded")
+    console.log("Path bounds database already seeded")
 }
-console.log("=================== Paths seeding ended =========================")
+console.log("=================== Path bounds seeding ended =========================")
 
 process.exit();
 
@@ -84,10 +85,7 @@ async function pickStartingPoints(boundingBox, resolution) {
                 }
             });
             // Conversion en point geoJSON pour l'index geospatial
-            startingPoints.push({
-                type: "Point",
-                coordinates: result.geometry.coordinates[0]
-            });
+            startingPoints.push(result.geometry.coordinates[0]);
         }
     }
     console.log("Computed " + startingPoints.length + " starting points");
@@ -102,17 +100,38 @@ async function pickStartingPoints(boundingBox, resolution) {
  * @param minDistance
  * @param maxDistance
  * @param distanceStep
+ * @param distanceTolerance
  * @returns {*[]}
  */
-function computePaths(startingPoints, minDistance, maxDistance, distanceStep) {
+async function pickEndingPoints(startingPoints, minDistance, maxDistance, distanceStep, distanceTolerance) {
     const toReturn = [];
-    for (let startingPoint of startingPoints) {
-        toReturn.push({
-            "start": startingPoint,
-            "length": 200,
-            "restaurants": []
-        })
+    // On parcoure toutes les distances par pas de distanceStep
+    for (let distance = minDistance; distance <= maxDistance; distance += distanceStep) {
+        console.log("Picking ending points for distance " + distance + "... (" + minDistance + " - " + maxDistance + " step " + distanceStep + ")")
+        const oldLen = toReturn.length;
+        for (let startingPoint of startingPoints) {
+            // On calcule le graphe de proximité avec la tolérance renseignée
+            const proximityGraph = await computeProximityGraph(
+                startingPoint,
+                distance - distanceTolerance * distance,
+                distance + distanceTolerance * distance,
+            );
+            // Pour chaque point du graphe, créé un chemin entre le point de départ et le point du graphe
+            for (let endingPoint of proximityGraph.records) {
+                const endingPointCoordinates = endingPoint._fields[0].properties.coordinates;
+                const pathDistance = endingPoint._fields[1];
+                toReturn.push({
+                    "start": startingPoint,
+                    "end": endingPointCoordinates,
+                    "length": pathDistance,
+                    "restaurants": null,
+                    "routes": null
+                })
+            }
+        }
+        console.log("Picked " + (toReturn.length - oldLen) + " ending points for distance " + distance);
     }
+    console.log("Computed " + toReturn.length + " ending points");
     return toReturn;
 }
 

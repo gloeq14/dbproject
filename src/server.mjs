@@ -1,5 +1,5 @@
 import express from 'express'
-import {homePage, searchModal, pathModal, adminModal, startingPoints, shortestPath } from "./controllers/itineraryController.mjs";
+import { homePage, searchModal, pathModal, adminModal, startingPoints, errorModal } from "./controllers/itineraryController.mjs";
 import { heartbeat, extractedData, transformedData, parcours } from "./controllers/featureController.mjs";
 import { ROOT, boot } from "./boot.mjs";
 
@@ -13,18 +13,19 @@ app.set('view engine', 'pug');
 app.use("/assets", express.static(ROOT + "/../public/assets"));
 app.use("/bootstrap", express.static(ROOT + '../../node_modules/bootstrap/dist/css'));
 app.use("/leaflet", express.static(ROOT + "../../node_modules/leaflet/dist"));
+app.use(express.json());
 
 // Route definitions
 app.get('/', homePage);
 app.get('/modals/search-modal', searchModal);
 app.get('/modals/path-modal', pathModal);
 app.get('/modals/admin-modal', adminModal);
+app.get('/modals/error-modal', errorModal);
 app.get('/starting_points', startingPoints);
 app.get('/heartbeat', heartbeat);
 app.get('/extracted_data', extractedData);
 app.get('/transformed_data', transformedData);
-app.get('/parcours', parcours);
-app.get('/shortest_path', shortestPath);
+app.post('/parcours', parcours);
 
 // Server handling
 const listener = app.listen(80, () => {

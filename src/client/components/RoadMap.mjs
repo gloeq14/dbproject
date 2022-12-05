@@ -20,6 +20,8 @@ export default class RoadMap {
         this.pointer = document.querySelector("#pointer");
         this.pointerCallback = null;
         this.mapObjects = {};
+        this.askedStartingPoint = null;
+        this.setPointerVisible(false);
         this.bind();
         this.initMap(lat, long);
         this.loadSearchModal();
@@ -91,6 +93,16 @@ export default class RoadMap {
     }
 
     /**
+     * Affiche ou cache le pointeur
+     *
+     * @param visible
+     */
+    setPointerVisible(visible) {
+        if (visible) this.pointer.classList.remove("hidden");
+        else this.pointer.classList.add("hidden");
+    }
+
+    /**
      * Initie la carte openstreetmap
      *
      * @param lat
@@ -118,9 +130,15 @@ export default class RoadMap {
      * @returns {Promise<AxiosResponse<any>>}
      */
     findPaths(startingPoint, distance, stopCount, restaurantTypes) {
-        return axios.get("/parcours", {
-            params: {
-                startingPoint: startingPoint,
+        this.askedStartingPoint = startingPoint;
+        return axios.post("/parcours", {
+            data: {
+                startingPoint: {
+                    "type": "Point",
+                    "coordinates": [
+                        startingPoint.lng, startingPoint.lat
+                    ]
+                },
                 length: distance,
                 numberOfStops: stopCount,
                 type: restaurantTypes
@@ -134,6 +152,11 @@ export default class RoadMap {
      * @param path
      */
     setActivePath(path) {
+        this.setPointerVisible(false);
+        // Clean marqueurs précédents
+        if (this.mapObjects["path"]) this.mapObjects["path"].forEach(object => object.remove());
+        delete this.mapObjects["path"];
+        // Formattage du chemin
         this.path = path;
         let formattedPath = [];
         for (const route of path["features"][0]["geometry"]["coordinates"][0]) {
@@ -141,12 +164,38 @@ export default class RoadMap {
                 formattedPath.push([coordinates[1], coordinates[0]]); // GeoJSON inverse par rapport à Leaflet
             }
         }
+        // Affichage du chemin
+        const featureGroup = new L.FeatureGroup();
         const pathPoly = L.polyline(formattedPath, {
             color: '#0d6efd',
             weight: 10
         });
         pathPoly.addTo(this.map);
-        this.map.fitBounds(pathPoly.getBounds());
+        pathPoly.addTo(featureGroup);
+        // Affichage des marqueurs
+        const startMarker = L.marker(formattedPath[0]);
+        startMarker.addTo(this.map);
+        const endMarker = L.marker(formattedPath[formattedPath.length-1]);
+        endMarker.addTo(this.map);
+        // Sauvegarde de l'état
+        this.mapObjects["path"] = [pathPoly, startMarker, endMarker];
+        // Ajout d'un chemin vers le départ si on est pas tombé exact
+        if (this.askedStartingPoint != formattedPath[0]) {
+            const toStartPoly = L.polyline([this.askedStartingPoint, formattedPath[0]], {
+                color: '#0d6efd',
+                weight: 10,
+                dashArray: '20, 20',
+                dashOffset: 0
+            })
+            toStartPoly.addTo(this.map);
+            this.mapObjects["path"].push(toStartPoly);
+            const askedStartMarker = L.marker(this.askedStartingPoint);
+            askedStartMarker.addTo(this.map);
+            this.mapObjects["path"].push(askedStartMarker);
+            toStartPoly.addTo(featureGroup);
+        }
+        // Ajustement de la carte et chargement du modal de détail
+        this.map.fitBounds(featureGroup.getBounds());
         this.loadPathModal();
     }
 
@@ -154,7 +203,7 @@ export default class RoadMap {
      * Charge le modal de détail d'un chemin
      */
     loadPathModal() {
-        this.loadModal("path", { params: { path: this.path._id } });
+        this.loadModal("path", { params: { path: this.path.features[0].properties.path_id } });
     }
 
     /**
@@ -177,12 +226,15 @@ export default class RoadMap {
                     []
                 ).then((data) => {
                     this.setActivePath(data.data);
+                }).catch((data) => {
+                    this.loadModal("error", { error: data.text });
                 });
             });
             adminMenuButton.addEventListener("click", (e) => {
                e.preventDefault();
                this.loadAdminModal();
             });
+            this.setPointerVisible(true);
         });
     }
 

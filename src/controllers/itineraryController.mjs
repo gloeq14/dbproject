@@ -1,5 +1,6 @@
 import { paths } from "../database/mongo.mjs";
 import { client } from "../database/neo4j.mjs";
+import { ObjectId } from "mongodb";
 
 // Page d'accueil
 export function homePage(req, res) {
@@ -12,10 +13,15 @@ export function searchModal(req, res) {
 }
 
 // Modal de détail d'un chemin
-export function pathModal(req, res) {
-    res.render("modals/path-modal", {
-        distance: "100"
-    });
+export async function pathModal(req, res) {
+    const path = await paths.findOne({ "_id" : new ObjectId(req.query.path) });
+    if (path) {
+        res.render("modals/path-modal", {
+            path: path
+        });
+    } else {
+        res.status(404).send("Chemin introuvable");
+    }
 }
 
 // Modal du menu admin
@@ -34,28 +40,9 @@ export async function startingPoints(req, res) {
     res.json(result);
 }
 
-// Plus court chemin
-export async function shortestPath(req, res) {
-    let depart = [ -73.60510433754504, 45.52846529402161 ]
-    let arrival = [ -73.62025709903915, 45.52086586881242 ]
-
-    let result = await client.session().run(
-        'MATCH (start:Node {coordinates: $depart}), (end:Node {coordinates: $arrival}) \
-        MATCH p=(start)-[:JOINS*]->(end) \
-        WITH p, reduce(s = 0, r IN relationships(p) | s + r.distance) AS dist \
-        RETURN p, dist ORDER BY dist LIMIT 1\
-        ',
-        { depart: depart, arrival: arrival }
-    )
-
-    res.json(result);
+// Modal d'erreur
+export async function errorModal(req, res) {
+    res.render("modals/error-modal", {
+        error: req.query.error
+    })
 }
-
-
-// 'MATCH (start:Node {coordinates: $depart}), (end:Node) WHERE start.coordinates <> end.coordinates\
-// MATCH p=shortestPath((start)-[:JOINS*]->(end)) \
-// RETURN p, end'
-
-// 'MATCH (start:Node {coordinates: $depart}), (end:Node {coordinates: $arrival}) \
-// CALL apoc.algo.dijkstra(start, end, \'JOINS\', \'distance\') YIELD path, weight \
-// RETURN path, weight'

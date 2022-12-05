@@ -49,7 +49,7 @@ async function buildMissingNodes(routes) {
                 // Si le noeud n'existe pas, on le créé
                 if (result.records.length <= 0) {
                     count++;
-                    let result = await client.session().run(
+                    await client.session().run(
                         'CREATE (node:Node {coordinates: $coordinates}) RETURN node',
                         {coordinates: node}
                     );
