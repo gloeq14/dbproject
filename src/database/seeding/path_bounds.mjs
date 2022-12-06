@@ -2,6 +2,7 @@ import { boot, ROOT } from "../../boot.mjs";
 import { restaurants, routes } from "../mongo.mjs";
 import { paths } from "../mongo.mjs";
 import { computeProximityGraph } from "../../core/navigation.mjs";
+import { SingleBar } from "cli-progress";
 
 await boot();
 
@@ -10,8 +11,8 @@ if (await paths.countDocuments() <= 0) {
     await truncatePaths();
     await createGeoIndex();
     const boundingBox = (await computeRestaurantsBoundingBox().toArray())[0];
-    const startingPoints = await pickStartingPoints(boundingBox, 20);
-    const computedPaths = await pickEndingPoints(startingPoints, 200, 5000, 100, 0.10);
+    const startingPoints = await pickStartingPoints(boundingBox, 16);
+    const computedPaths = await pickEndingPoints(startingPoints, [5000, 7500, 10000, 12000, 8000, 15000], 0.10);
     await insertPaths(computedPaths);
 } else {
     console.log("Path bounds database already seeded")
@@ -97,30 +98,33 @@ async function pickStartingPoints(boundingBox, resolution) {
  * et en prenant des distances incrémentales de distanceStep
  *
  * @param startingPoints
- * @param minDistance
- * @param maxDistance
- * @param distanceStep
+ * @param distances
  * @param distanceTolerance
  * @returns {*[]}
  */
-async function pickEndingPoints(startingPoints, minDistance, maxDistance, distanceStep, distanceTolerance) {
+async function pickEndingPoints(startingPoints, distances, distanceTolerance) {
     const toReturn = [];
     // On parcoure toutes les distances par pas de distanceStep
-    for (let distance = minDistance; distance <= maxDistance; distance += distanceStep) {
-        console.log("Picking ending points for distance " + distance + "... (" + minDistance + " - " + maxDistance + " step " + distanceStep + ")")
+    for (let i = 0; i < distances.length; i++) {
+        const distance = distances[i];
         const oldLen = toReturn.length;
-        for (let startingPoint of startingPoints) {
+        const bar_2 = new SingleBar();
+        bar_2.start(startingPoints.length-1, 0);
+        for (let j = 0; j < startingPoints.length; j++) {
+            const startingPoint = startingPoints[j];
             // On calcule le graphe de proximité avec la tolérance renseignée
             const proximityGraph = await computeProximityGraph(
                 startingPoint,
                 distance - distanceTolerance * distance,
                 distance + distanceTolerance * distance,
+                distance/100
             );
             // Pour chaque point du graphe, créé un chemin entre le point de départ et le point du graphe
             for (let endingPoint of proximityGraph.records) {
                 const endingPointCoordinates = endingPoint._fields[0].properties.coordinates;
                 const pathDistance = endingPoint._fields[1];
                 toReturn.push({
+                    "original_length": distance, // Pour calculer le nombre de relations
                     "start": startingPoint,
                     "end": endingPointCoordinates,
                     "length": pathDistance,
@@ -128,8 +132,9 @@ async function pickEndingPoints(startingPoints, minDistance, maxDistance, distan
                     "routes": null
                 })
             }
+            bar_2.update(j);
         }
-        console.log("Picked " + (toReturn.length - oldLen) + " ending points for distance " + distance);
+        bar_2.stop();
     }
     console.log("Computed " + toReturn.length + " ending points");
     return toReturn;

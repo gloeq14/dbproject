@@ -5295,6 +5295,7 @@ class RoadMap {
     this.pointer = document.querySelector("#pointer");
     this.pointerCallback = null;
     this.mapObjects = {};
+    this.restaurants = [];
     this.askedStartingPoint = null;
     this.setPointerVisible(false);
     this.bind();
@@ -5403,17 +5404,29 @@ class RoadMap {
    * @returns {Promise<AxiosResponse<any>>}
    */
   findPaths(startingPoint, distance, stopCount, restaurantTypes) {
-    this.askedStartingPoint = startingPoint;
-    return _axios.default.post("/parcours", {
-      data: {
-        startingPoint: {
-          "type": "Point",
-          "coordinates": [startingPoint.lng, startingPoint.lat]
-        },
-        length: distance,
-        numberOfStops: stopCount,
-        type: restaurantTypes
-      }
+    // this.askedStartingPoint = startingPoint;
+    return _axios.default.post("/starting_point", {
+      startingPoint: {
+        "type": "Point",
+        "coordinates": [startingPoint.lng, startingPoint.lat]
+      },
+      length: distance,
+      numberOfStops: stopCount,
+      type: restaurantTypes
+    }).then(data => {
+      return new Promise((resolve, reject) => {
+        _axios.default.post("/parcours", {
+          startingPoint: data.data["startingPoint"],
+          length: distance,
+          numberOfStops: stopCount,
+          type: restaurantTypes
+        }).then(path => {
+          console.log(path);
+          resolve(path);
+        }).catch(error => {
+          reject(error);
+        });
+      });
     });
   }
 
@@ -5425,14 +5438,25 @@ class RoadMap {
   setActivePath(path) {
     this.setPointerVisible(false);
     // Clean marqueurs précédents
-    if (this.mapObjects["path"]) this.mapObjects["path"].forEach(object => object.remove());
+    if (this.mapObjects["path"]) this.mapObjects["path"].remove();
     delete this.mapObjects["path"];
     // Formattage du chemin
     this.path = path;
     let formattedPath = [];
-    for (const route of path["features"][0]["geometry"]["coordinates"][0]) {
-      for (const coordinates of route) {
-        formattedPath.push([coordinates[1], coordinates[0]]); // GeoJSON inverse par rapport à Leaflet
+    let formattedRestaurants = [];
+    this.restaurants = [];
+    for (const feature of path["features"]) {
+      if (feature.geometry.type === "Point") {
+        // Restaurant
+        formattedRestaurants.push(feature); // GeoJSON inverse par rapport à Leaflet
+        this.restaurants.push(feature._id);
+      } else {
+        // Route
+        for (const route of feature.geometry.coordinates[0]) {
+          for (const coordinates of route) {
+            formattedPath.push([coordinates[1], coordinates[0]]); // GeoJSON inverse par rapport à Leaflet
+          }
+        }
       }
     }
     // Affichage du chemin
@@ -5441,31 +5465,42 @@ class RoadMap {
       color: '#0d6efd',
       weight: 10
     });
-    pathPoly.addTo(this.map);
     pathPoly.addTo(featureGroup);
     // Affichage des marqueurs
     const startMarker = L.marker(formattedPath[0]);
-    startMarker.addTo(this.map);
+    startMarker.addTo(featureGroup);
     const endMarker = L.marker(formattedPath[formattedPath.length - 1]);
-    endMarker.addTo(this.map);
-    // Sauvegarde de l'état
-    this.mapObjects["path"] = [pathPoly, startMarker, endMarker];
+    endMarker.addTo(featureGroup);
+    // Affichage des restaurants
+    const icon = L.icon({
+      iconUrl: 'http://localhost/assets/images/food_marker.png',
+      iconSize: [37, 50],
+      iconAnchor: [18, 50],
+      popupAnchor: [0, -30]
+    });
+    for (const restaurant of formattedRestaurants) {
+      const marker = L.marker([restaurant.geometry.coordinates[1], restaurant.geometry.coordinates[0]]);
+      const popup = L.popup().setContent("<h6 class='mb-1'>" + restaurant.properties.name + "</h6><p class='mt-0 mb-0'>" + restaurant.properties.type + "</p>");
+      marker.bindPopup(popup);
+      marker.setIcon(icon);
+      marker.addTo(featureGroup);
+    }
     // Ajout d'un chemin vers le départ si on est pas tombé exact
-    if (this.askedStartingPoint != formattedPath[0]) {
+    if (this.askedStartingPoint && this.askedStartingPoint != formattedPath[0]) {
       const toStartPoly = L.polyline([this.askedStartingPoint, formattedPath[0]], {
         color: '#0d6efd',
         weight: 10,
         dashArray: '20, 20',
         dashOffset: 0
       });
-      toStartPoly.addTo(this.map);
-      this.mapObjects["path"].push(toStartPoly);
-      const askedStartMarker = L.marker(this.askedStartingPoint);
-      askedStartMarker.addTo(this.map);
-      this.mapObjects["path"].push(askedStartMarker);
       toStartPoly.addTo(featureGroup);
+      const askedStartMarker = L.marker(this.askedStartingPoint);
+      askedStartMarker.addTo(featureGroup);
     }
+    // Sauvegarde de l'état
+    this.mapObjects["path"] = featureGroup;
     // Ajustement de la carte et chargement du modal de détail
+    featureGroup.addTo(this.map);
     this.map.fitBounds(featureGroup.getBounds());
     this.loadPathModal();
   }
@@ -5476,7 +5511,8 @@ class RoadMap {
   loadPathModal() {
     this.loadModal("path", {
       params: {
-        path: this.path.features[0].properties.path_id
+        path: this.path.features[this.path.features.length - 1].properties.path_id,
+        restaurants: JSON.stringify(this.restaurants)
       }
     });
   }
@@ -5497,8 +5533,11 @@ class RoadMap {
         this.findPaths(this.map.getCenter(), parseInt(distanceInput.value), parseInt(stopCountInput.value), []).then(data => {
           this.setActivePath(data.data);
         }).catch(data => {
+          console.log(data);
           this.loadModal("error", {
-            error: data.text
+            params: {
+              error: data.response.data
+            }
           });
         });
       });

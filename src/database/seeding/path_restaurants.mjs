@@ -32,7 +32,7 @@ async function fillPaths(emptyPaths) {
     const start = new Date().getTime();
     console.log("Filling " + emptyPaths.length + " paths...");
     const bar = new SingleBar();
-    bar.start(emptyPaths.length, 0);
+    bar.start(emptyPaths.length-1, 0);
     for (let i = 0; i < emptyPaths.length; i++) {
         const path = emptyPaths[i];
         const result = (await paths.aggregate([

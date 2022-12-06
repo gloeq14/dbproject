@@ -1,4 +1,5 @@
 import { client } from "../database/neo4j.mjs";
+import {restaurants} from "../database/mongo.mjs";
 
 /**
  * Calcule un graphe de proximité à partir d'un point d'entrée d'une distance et d'un nombre maximum de sauts.
@@ -50,4 +51,19 @@ export function computePathBetween(startingNode, endingNode, exactDistance, maxR
             exactDistance: exactDistance
         }
     )
+}
+
+/**
+ * Retourne la liste des restaurants qui sont les plus présents dans la base
+ *
+ * @returns {Promise<Document[]>}
+ */
+export async function getMostPopularRestaurantTypes() {
+    return restaurants.aggregate([
+        { $group: {
+                _id: "$properties.type",
+                count: { $count: {} }
+            } },
+        { $match: { count: { $gt: 500 } } }
+    ]).toArray();
 }

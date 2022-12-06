@@ -1,4 +1,4 @@
-import { paths } from "../database/mongo.mjs";
+import { paths, restaurants } from "../database/mongo.mjs";
 import { client } from "../database/neo4j.mjs";
 import { ObjectId } from "mongodb";
 
@@ -14,10 +14,16 @@ export function searchModal(req, res) {
 
 // Modal de détail d'un chemin
 export async function pathModal(req, res) {
+    const restaurantIds = [];
+    for (const r of JSON.parse(req.query.restaurants)) {
+        restaurantIds.push(new ObjectId(r));
+    }
     const path = await paths.findOne({ "_id" : new ObjectId(req.query.path) });
+    const restaurantList = await restaurants.find({ "_id": { $in: restaurantIds } }).toArray();
     if (path) {
         res.render("modals/path-modal", {
-            path: path
+            path: path,
+            restaurants: restaurantList
         });
     } else {
         res.status(404).send("Chemin introuvable");

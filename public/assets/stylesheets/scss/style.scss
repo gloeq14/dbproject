@@ -20,8 +20,8 @@
 
 #modal {
   transition: 400ms all ease;
-  max-height: 2000px;
-  overflow: hidden;
+  max-height: 600px;
+  overflow-y: auto;
 
   &:after {
     transition: 400ms all ease;

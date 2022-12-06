@@ -2,10 +2,11 @@ import { boot, ROOT } from "../../boot.mjs";
 import { routes } from "../mongo.mjs";
 import { restaurants } from "../mongo.mjs";
 import { readFileSync } from "fs";
+import {SingleBar} from "cli-progress";
 
 await boot();
 
-const radius = 100;
+const radius = 500;
 const geoJSONFile = ROOT + '/../data/restaurants.geojson';
 const restaurantsFromFile = loadRestaurantsFromFile(geoJSONFile);
 
@@ -53,10 +54,16 @@ async function createGeoIndex() {
  * @returns {Promise<void>}
  */
 async function linkRestaurants() {
-    for (const route of await routes.find().toArray()) {
+    const toLink = await routes.find().toArray();
+    const bar = new SingleBar();
+    bar.start(toLink.length-1, 0);
+    for (let i = 0; i < toLink.length; i++) {
+        const route = toLink[i];
         route.properties["restaurants"] = await findRoadRestaurants(route);
         await routes.updateOne({_id: route._id}, {$set: {properties: route.properties}});
+        bar.update(i);
     }
+    bar.stop();
     console.log("Linked restaurants successfully");
 }
 

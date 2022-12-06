@@ -9,13 +9,17 @@ form.mb-0
     div.row.align-items-center.justify-content-between.mb-3
         div.col-auto="Nombre d'arrêts"
         div.col-auto
-            span.form-text="3"
+            span.form-text=restaurants.length
 
-    div.card.mb-4
-        div.card-body
-            h6.card-title="Restaurant 1"
-            p.card-text="Description du restaurant numéro 1"
+    each restaurant in restaurants
+        div.card.mb-3
+            div.card-body
+                h6.card-title
+                    =restaurant.properties.name
+                    span.ms-2.badge.bg-primary=restaurant.properties.type
+                p.card-text
+                    =restaurant.properties.address + " " + restaurant.properties.city + " " + restaurant.properties.state
 
-    div
+    div.mt-4
         button(type="submit")#back-button.mb-0.btn.btn-secondary="Retour"
 
