@@ -26,6 +26,8 @@ process.exit();
  */
 async function createGeoIndex() {
     await paths.createIndex({ start: "2dsphere" });
+    await paths.createIndex({ routes: 1});
+    await paths.createIndex({ restaurants: 1 });
 }
 
 /**

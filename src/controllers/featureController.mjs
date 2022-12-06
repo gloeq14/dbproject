@@ -1,6 +1,4 @@
 import { paths, restaurants, routes } from "../database/mongo.mjs";
-import { ObjectId } from "mongodb";
-import { types } from "neo4j-driver";
 import { expect } from "../core/error_handling.mjs";
 import { getMostPopularRestaurantTypes } from "../core/navigation.mjs";
 
@@ -89,8 +87,8 @@ export async function startingPoint(req, res) {
         // Sort et limite
         pipeline.push(
             //{ $sort: { "length_difference": 1 } }, Beaucoup plus rapide sans le sort on passe de 40s + à 3s max
-            //{$sample: { size: 1 }},
-            {$limit: 1}
+            {$limit: 100},
+            {$sample: { size: 1 }},
         )
         // Lancement de la recherche
         const path = (await paths.aggregate(pipeline).toArray())[0];
