@@ -10,5 +10,4 @@ RUN npm install --$NODE_ENV
 
 COPY . .
 
-#CMD npm run seed
-#&& npm run serve
+CMD npm run serve

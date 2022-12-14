@@ -1,13 +1,6 @@
 import express from 'express'
 import { homePage, searchModal, pathModal, adminModal, startingPoints, errorModal } from "./controllers/itineraryController.mjs";
-import {
-	heartbeat,
-	extractedData,
-	transformedData,
-	parcours,
-	startingPoint,
-	type
-} from "./controllers/featureController.mjs";
+import { heartbeat, extractedData, transformedData, parcours, startingPoint, type } from "./controllers/featureController.mjs";
 import { ROOT, boot } from "./boot.mjs";
 
 await boot();

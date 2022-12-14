@@ -1,18 +1,33 @@
 import { paths, restaurants } from "../database/mongo.mjs";
-import { client } from "../database/neo4j.mjs";
 import { ObjectId } from "mongodb";
 
-// Page d'accueil
+/**
+ * Rends la page d'accueil
+ *
+ * @param req
+ * @param res
+ */
 export function homePage(req, res) {
     res.render("home");
 }
 
-// Modal de recherche de chemin
+/**
+ * Affiche la modale de recherche de chemin
+ *
+ * @param req
+ * @param res
+ */
 export function searchModal(req, res) {
     res.render("modals/search-modal");
 }
 
-// Modal de détail d'un chemin
+/**
+ * Affiche la modale de détail d'un chemin
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
 export async function pathModal(req, res) {
     const restaurantIds = [];
     for (const r of JSON.parse(req.query.restaurants)) {
@@ -30,12 +45,23 @@ export async function pathModal(req, res) {
     }
 }
 
-// Modal du menu admin
+/**
+ * Affiche la modale du menu administrateur
+ *
+ * @param req
+ * @param res
+ */
 export function adminModal(req, res) {
     res.render("modals/admin-modal");
 }
 
-// Liste des starting points
+/**
+ * Retourne la liste des startings points précalculés
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
 export async function startingPoints(req, res) {
     const result = (await paths.aggregate([{
         "$project": {
@@ -46,7 +72,13 @@ export async function startingPoints(req, res) {
     res.json(result);
 }
 
-// Modal d'erreur
+/**
+ * Affiche un modal d'erreur
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
 export async function errorModal(req, res) {
     res.render("modals/error-modal", {
         error: req.query.error

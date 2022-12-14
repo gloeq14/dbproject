@@ -1,15 +1,27 @@
 import { paths, restaurants, routes } from "../database/mongo.mjs";
 import { expect } from "../core/error_handling.mjs";
 import { getMostPopularRestaurantTypes } from "../core/navigation.mjs";
+import { ROOT } from "../boot.mjs";
 
-// Affiche la ville choisie
+/**
+ * Affiche la ville choisie
+ *
+ * @param req
+ * @param res
+ */
 export function heartbeat(req, res) {
     res.json({
         VilleChoisie: 'Montreal',
     });
 }
 
-// Affiche le nombre de restaurants ainsi que le nombre de routes
+/**
+ * Affiche le nombre de restaurants ainsi que le nombre de routes disponibles
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
 export async function extractedData(req, res) {
     res.json({
         nbRestaurants: await restaurants.count(),
@@ -17,7 +29,13 @@ export async function extractedData(req, res) {
     });
 }
 
-// Affiche le nombre de restaurants par type ainsi que la longueur cyclable totale
+/**
+ * Affiche le nombre de restaurants par type ainsi que la longueur cyclable totale
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
 export async function transformedData(req, res) {
     const totalLength = await routes.aggregate([{
         $group: {
@@ -36,7 +54,24 @@ export async function transformedData(req, res) {
     });
 }
 
-// Retourne les types de restaurants disponibles
+/**
+ * Downloads the README file
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
+export async function readme(req, res) {
+    res.download(ROOT + "/README.md");
+}
+
+/**
+ * Retourne les types de restaurants disponibles pour le calcul de parcours
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
 export async function type(req, res) {
     const restaurantTypes = await getMostPopularRestaurantTypes();
     let formattedTypes = [];
@@ -46,7 +81,13 @@ export async function type(req, res) {
     res.json(formattedTypes);
 }
 
-// Calcule un starting point à partir des paramètres donnés
+/**
+ * Calcule et retourne un starting point pour les paramètres renseignés
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
 export async function startingPoint(req, res) {
     const minStops = 10; // Pour la correction, le prof veut des chemins de 10 arrêts mini et on y a pas accès à cette étape...
     const lengthTolerance = 0.10;
@@ -76,12 +117,12 @@ export async function startingPoint(req, res) {
                         restaurants: {
                             $filter: {
                                 input: "$restaurants",
-                                cond: {$in: ["$$this.type", restaurantTypes]},
+                                cond: { $in: ["$$this.type", restaurantTypes] },
                             }
                         }
                     }
                 },
-                {$match: {["restaurants." + (minStops - 1)]: {$exists: true}}}
+                { $match: { ["restaurants." + (minStops - 1)]: { $exists: true } } }
             );
         }
         // Sort et limite
@@ -103,11 +144,17 @@ export async function startingPoint(req, res) {
             throw new Error("Impossible de trouver un point de départ avec ces paramètres. Veuillez les ajuster.");
         }
     } catch (e) {
-        res.status(400).send(e.message);
+        res.status(e.code ?? 400).send(e.message);
     }
 }
 
-// Calcule un parcours à partir d'un starting point, d'une longueur, d'un nombre de stop et d'une liste de type de resto
+/**
+ * Calcule un parcours et le retourne à partir d'un starting point et des paramètres renseignés
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
 export async function parcours(req, res) {
     const lengthTolerance = 0.10;
     // Formattage des paramètres de la requête
@@ -126,11 +173,12 @@ export async function parcours(req, res) {
         // le max distance est fait sur l'endpoint starting_point en revanche
         const pipeline = [
             // Proximité du point de départ
-            {$match: {start: startingPoint.coordinates, routes: {$ne: null}, restaurants: {$ne: null}}},
-            // Ajout du champ qui calcule la différence entre la longueur voulue et la longueur du chemin
-            {$addFields: {length_difference: {$abs: {$subtract: [length, '$original_length']}}}},
+            { $match: { start: startingPoint.coordinates, routes: { $ne: null }, restaurants: { $ne: null } } },
             // On exclut les chemins pas encore traités incrémentalement
-            {$match: {length_difference: {$lte: lengthTolerance * length}}},
+            { $match: { length: {
+                $gte: length - (lengthTolerance * length),
+                $lte: length + (lengthTolerance * length)
+            } } },
         ];
         // On filtre les restaurants qui ne sont pas du bon type (ignorée si liste des types vides)
         if (restaurantTypes.length > 0) {
@@ -140,7 +188,7 @@ export async function parcours(req, res) {
                         restaurants: {
                             $filter: {
                                 input: "$restaurants",
-                                cond: {$in: ["$$this.type", restaurantTypes]},
+                                cond: { $in: ["$$this.type", restaurantTypes] },
                             }
                         }
                     }
@@ -150,15 +198,14 @@ export async function parcours(req, res) {
         // Nombre de stops souhaités
         if (numberOfStops > 0) {
             pipeline.push(
-                {$match: {["restaurants." + (numberOfStops - 1)]: {$exists: true}}}
+                { $match: { ["restaurants." + (numberOfStops - 1)]: {$exists: true} } }
             );
         }
         // Sort et limite
         pipeline.push(
             // {$sort: {"length_difference": 1, "distance_from_starting_point": 1}}, Trop long :/
-            {$limit: 1}
+            { $limit: 1 }
         )
-        console.log(pipeline);
         // Lancement de la recherche
         const path = (await paths.aggregate(pipeline).toArray())[0];
         if (path) {
@@ -202,6 +249,6 @@ export async function parcours(req, res) {
             throw new Error("Impossible de trouver un chemin avec ces paramètres. Veuillez les ajuster.")
         }
     } catch (e) {
-        res.status(400).send(e.message);
+        res.status(e.code ?? 400).send(e.message);
     }
 }
