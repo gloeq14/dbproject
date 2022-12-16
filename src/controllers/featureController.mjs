@@ -2,6 +2,9 @@ import { paths, restaurants, routes } from "../database/mongo.mjs";
 import { expect } from "../core/error_handling.mjs";
 import { getMostPopularRestaurantTypes } from "../core/navigation.mjs";
 import { ROOT } from "../boot.mjs";
+import fs from "fs";
+import { ObjectId } from "mongodb";
+import _ from "lodash";
 
 /**
  * Affiche la ville choisie
@@ -11,7 +14,7 @@ import { ROOT } from "../boot.mjs";
  */
 export function heartbeat(req, res) {
     res.json({
-        VilleChoisie: 'Montreal',
+        villeChoisie: 'Montreal',
     });
 }
 
@@ -62,7 +65,7 @@ export async function transformedData(req, res) {
  * @returns {Promise<void>}
  */
 export async function readme(req, res) {
-    res.download(ROOT + "/README.md");
+    res.download(ROOT + "/../README.md");
 }
 
 /**
@@ -86,10 +89,29 @@ export async function type(req, res) {
  *
  * @param req
  * @param res
+ * @param startingPointsCache
  * @returns {Promise<void>}
  */
-export async function startingPoint(req, res) {
-    const minStops = 10; // Pour la correction, le prof veut des chemins de 10 arrêts mini et on y a pas accès à cette étape...
+export async function startingPoint(req, res, startingPointsCache = true) {
+    // Attention magouille: 1 fois sur 5 environ on a un doublon dans la suite des 3 startings points
+    // donc on sauvegarde les 3 derniers startings points par requêtes et on force a ne pas prendre les même
+    // si la requête échoue on la retente sans le forçage
+    const cacheFile = ROOT + '/../cache/last_starting_points.json';
+    let cacheData = {
+        body: req.body,
+        last_starting_points: []
+    };
+    if (fs.existsSync(cacheFile)) {
+        const data = JSON.parse(fs.readFileSync(cacheFile));
+        if (_.isEqual(data.body, req.body)) {
+            cacheData.last_starting_points = data.last_starting_points;
+            //for (const point of data.last_starting_points) {
+            //    cacheData.last_starting_points.push(new ObjectId(point));
+            //}
+        }
+    }
+    // Pour la correction, le prof veut des chemins de 10 arrêts mini et on y a pas accès à cette étape...
+    const minStops = 10;
     const lengthTolerance = 0.10;
     // Formattage des paramètres de la requête
     try {
@@ -109,6 +131,10 @@ export async function startingPoint(req, res) {
                 $lte: length + (lengthTolerance * length)
             } } },
         ];
+        // 3 derniers startings points exclus
+        if (cacheData.last_starting_points.length > 0 && startingPointsCache) {
+            pipeline.push({ $match: { start: { $nin: cacheData.last_starting_points } }});
+        }
         // On filtre les restaurants qui ne sont pas du bon type (ignorée si liste des types vides)
         if (restaurantTypes.length > 0) {
             pipeline.push(
@@ -134,6 +160,9 @@ export async function startingPoint(req, res) {
         // Lancement de la recherche
         const path = (await paths.aggregate(pipeline).toArray())[0];
         if (path) {
+            cacheData.last_starting_points.unshift(path.start);
+            if (cacheData.last_starting_points.length > 3) cacheData.last_starting_points.pop();
+            fs.writeFileSync(cacheFile, JSON.stringify(cacheData, null, 2));
             res.json({
                 "startingPoint": {
                     "type": "Point",
@@ -141,7 +170,14 @@ export async function startingPoint(req, res) {
                 }
             });
         } else {
-            throw new Error("Impossible de trouver un point de départ avec ces paramètres. Veuillez les ajuster.");
+            if (cacheData.last_starting_points.length > 0 && startingPointsCache) {
+                // On refait l'appel sans le cache en cas de non match
+                console.log("No starting point found with cache, trying without cache...")
+                return await startingPoint(req, res, false);
+            } else {
+                console.log("No starting point found.");
+                throw new Error("Impossible de trouver un point de départ avec ces paramètres. Veuillez les ajuster.");
+            }
         }
     } catch (e) {
         res.status(e.code ?? 400).send(e.message);
@@ -209,7 +245,6 @@ export async function parcours(req, res) {
         // Lancement de la recherche
         const path = (await paths.aggregate(pipeline).toArray())[0];
         if (path) {
-            console.log(path);
             // Récupération des géometries des routes du chemin trouvé
             const pathRoutes = [];
             for (const routeId of path.routes) {
@@ -224,7 +259,6 @@ export async function parcours(req, res) {
                 const restaurant = (await restaurants.findOne({"_id": path.restaurants[i]._id}))
                 pathRestaurants.push(restaurant);
             }
-            console.log(pathRestaurants);
             const formattedPath = {
                 "type": "FeatureCollection",
                 "features": [

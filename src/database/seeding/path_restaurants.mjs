@@ -5,6 +5,7 @@ import { SingleBar } from "cli-progress";
 await boot();
 
 console.log("=================== Starting path restaurants seeding... ===================")
+await paths.updateMany({}, {$set: {restaurants: null}});
 const emptyPaths = await getEmptyPaths();
 await fillPaths(emptyPaths);
 console.log("=================== Path restaurants seeding ended =========================")

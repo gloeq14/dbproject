@@ -1,5 +1,7 @@
 import { paths, restaurants } from "../database/mongo.mjs";
 import { ObjectId } from "mongodb";
+import { ROOT } from "../boot.mjs";
+import fs from "fs";
 
 /**
  * Rends la page d'accueil
@@ -63,13 +65,19 @@ export function adminModal(req, res) {
  * @returns {Promise<void>}
  */
 export async function startingPoints(req, res) {
-    const result = (await paths.aggregate([{
-        "$project": {
-            "_id": 0,
-            "start.coordinates": 1
-        }
-    }]).toArray()).map(doc => doc.start.coordinates);
-    res.json(result);
+    const cacheFile = ROOT + '/../cache/starting_points.json';
+    if (fs.existsSync(cacheFile)) {
+        res.json(JSON.parse(fs.readFileSync(cacheFile)));
+    } else {
+        const result = (await paths.aggregate([{
+            "$project": {
+                "_id": 0,
+                "start": 1
+            }
+        }]).toArray()).map(doc => doc.start);
+        fs.writeFileSync(cacheFile, JSON.stringify(result));
+        res.json(result);
+    }
 }
 
 /**

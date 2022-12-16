@@ -1,6 +1,6 @@
 import express from 'express'
 import { homePage, searchModal, pathModal, adminModal, startingPoints, errorModal } from "./controllers/itineraryController.mjs";
-import { heartbeat, extractedData, transformedData, parcours, startingPoint, type } from "./controllers/featureController.mjs";
+import { heartbeat, extractedData, transformedData, parcours, startingPoint, type, readme } from "./controllers/featureController.mjs";
 import { ROOT, boot } from "./boot.mjs";
 
 await boot();
@@ -28,6 +28,7 @@ app.get('/transformed_data', transformedData);
 app.post('/parcours', parcours);
 app.post('/starting_point', startingPoint);
 app.get('/type', type);
+app.get('/readme', readme);
 
 // Server handling
 const listener = app.listen(80, () => {

@@ -11,7 +11,7 @@ if (await paths.countDocuments() <= 0) {
     await truncatePaths();
     await createGeoIndex();
     const boundingBox = (await computeRestaurantsBoundingBox().toArray())[0];
-    const startingPoints = await pickStartingPoints(boundingBox, 16);
+    const startingPoints = await pickStartingPoints(boundingBox, 16, 2);
     const computedPaths = await pickEndingPoints(startingPoints, [5000, 7500, 10000, 12000, 8000, 15000], 0.10);
     await insertPaths(computedPaths);
 } else {
@@ -60,15 +60,20 @@ function computeRestaurantsBoundingBox() {
  *
  * @returns {Promise<[]>}
  */
-async function pickStartingPoints(boundingBox, resolution) {
+async function pickStartingPoints(boundingBox, resolution, offset=0) {
     const startingPoints = [];
-    const minLat = boundingBox["minLat"];
-    const minLng = boundingBox["minLng"];
-    const maxLat = boundingBox["maxLat"];
-    const maxLng = boundingBox["maxLng"];
+    let minLat = boundingBox["minLat"];
+    let minLng = boundingBox["minLng"];
+    let maxLat = boundingBox["maxLat"];
+    let maxLng = boundingBox["maxLng"];
     // On divise la bounding box en lattitude et en longitude par un nombre de carré égal à la résolution
     const latResolution = (maxLat - minLat) / resolution;
     const lngResolution = (maxLng - minLng) / resolution;
+    // On ajoute l'offset
+    if (offset > 1) {
+        minLat += latResolution / offset;
+        minLng += lngResolution / offset;
+    }
     for (let iLat = 0; iLat < resolution; iLat++) {
         for (let iLng = 0; iLng < resolution; iLng++) {
             // Coordonnée du centre du rectangle i
@@ -76,7 +81,7 @@ async function pickStartingPoints(boundingBox, resolution) {
                 minLat + iLat * latResolution + latResolution / 2,
                 minLng + iLng * lngResolution + lngResolution / 2,
             ];
-            // Récupération du restaurant le + proche
+            // Récupération de la route la + proche
             const result = await routes.findOne({
                 geometry: {
                     $near: {

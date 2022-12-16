@@ -6,7 +6,7 @@ import {SingleBar} from "cli-progress";
 
 await boot();
 
-const radius = 500;
+const radius = 1000;
 const geoJSONFile = ROOT + '/../data/restaurants.geojson';
 const restaurantsFromFile = loadRestaurantsFromFile(geoJSONFile);
 

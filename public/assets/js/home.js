@@ -5562,6 +5562,7 @@ class RoadMap {
         if (startingPointsCheckbox.checked) {
           this.mapObjects["starting_points"] = [];
           _axios.default.get("/starting_points").then(data => {
+            console.log(data);
             for (let point of data.data) {
               const startingPoint = L.marker([point[1], point[0]]);
               startingPoint.addTo(this.map);
