@@ -19,3 +19,8 @@ Nous avons changé nos deux jeux de données pour deux raisons:
 
 > - Mise à jour des exemples pour coincider avec les nouveaux jeux
 
+## Rendu 3 - Remise et présentation écrite du produit minimum viable
+
+### 4.2. Processus d'acquisition incrémentale des données
+
+Ajout du processus de comparaison.
